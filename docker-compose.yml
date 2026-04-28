@@ -1,0 +1,210 @@
+version: "3.9"
+
+services:
+
+  # ─────────────────────────────
+  # API GATEWAY
+  # ─────────────────────────────
+  nginx:
+    image: nginx:alpine
+    container_name: api_gateway
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - auth-service
+      - vendor-service
+      - planner-service
+      - analytics-service
+    networks:
+      - weddingwise_network
+
+  # ─────────────────────────────
+  # AUTH SERVICE
+  # ─────────────────────────────
+  auth-service:
+    build: ./auth-service
+    container_name: auth_service
+    env_file:
+      - ./auth-service/.env
+    depends_on:
+      auth-db:
+        condition: service_healthy
+    networks:
+      - weddingwise_network
+    volumes:
+      - ./auth-service:/app
+
+  # ─────────────────────────────
+  # VENDOR SERVICE
+  # ─────────────────────────────
+  vendor-service:
+    build: ./vendor-service
+    container_name: vendor_service
+    env_file:
+      - ./vendor-service/.env
+    depends_on:
+      vendor-db:
+        condition: service_healthy
+    networks:
+      - weddingwise_network
+    volumes:
+      - ./vendor-service:/app
+
+  # ─────────────────────────────
+  # PLANNER SERVICE
+  # ─────────────────────────────
+  planner-service:
+    build: ./planner-service
+    container_name: planner_service
+    env_file:
+      - ./planner-service/.env
+    depends_on:
+      planner-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - weddingwise_network
+    volumes:
+      - ./planner-service:/app
+    extra_hosts:
+      # This lets the container reach
+      # Ollama running on your Mac
+      - "host.docker.internal:host-gateway"
+
+  # ─────────────────────────────
+  # ANALYTICS SERVICE
+  # ─────────────────────────────
+  analytics-service:
+    build: ./analytics-service
+    container_name: analytics_service
+    env_file:
+      - ./analytics-service/.env
+    depends_on:
+      analytics-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - weddingwise_network
+    volumes:
+      - ./analytics-service:/app
+
+  # ─────────────────────────────
+  # DATABASES
+  # ─────────────────────────────
+  auth-db:
+    image: postgres:16-alpine
+    container_name: auth_db
+    environment:
+      POSTGRES_USER: auth_user
+      POSTGRES_PASSWORD: auth_password
+      POSTGRES_DB: auth_db
+    volumes:
+      - auth_db_data:/var/lib/postgresql/data
+    networks:
+      - weddingwise_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U auth_user -d auth_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  vendor-db:
+    image: postgres:16-alpine
+    container_name: vendor_db
+    environment:
+      POSTGRES_USER: vendor_user
+      POSTGRES_PASSWORD: vendor_password
+      POSTGRES_DB: vendor_db
+    volumes:
+      - vendor_db_data:/var/lib/postgresql/data
+    networks:
+      - weddingwise_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vendor_user -d vendor_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  planner-db:
+    image: postgres:16-alpine
+    container_name: planner_db
+    environment:
+      POSTGRES_USER: planner_user
+      POSTGRES_PASSWORD: planner_password
+      POSTGRES_DB: planner_db
+    volumes:
+      - planner_db_data:/var/lib/postgresql/data
+    networks:
+      - weddingwise_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U planner_user -d planner_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  analytics-db:
+    image: postgres:16-alpine
+    container_name: analytics_db
+    environment:
+      POSTGRES_USER: analytics_user
+      POSTGRES_PASSWORD: analytics_password
+      POSTGRES_DB: analytics_db
+    volumes:
+      - analytics_db_data:/var/lib/postgresql/data
+    networks:
+      - weddingwise_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U analytics_user -d analytics_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ─────────────────────────────
+  # REDIS — Cache
+  # ─────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: redis_cache
+    networks:
+      - weddingwise_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ─────────────────────────────
+  # RABBITMQ — Message Queue
+  # Dashboard: localhost:15672
+  # user: rabbit_user
+  # pass: rabbit_password
+  # ─────────────────────────────
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: rabbit_user
+      RABBITMQ_DEFAULT_PASS: rabbit_password
+    ports:
+      - "15672:15672"
+    networks:
+      - weddingwise_network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+networks:
+  weddingwise_network:
+    driver: bridge
+
+volumes:
+  auth_db_data:
+  vendor_db_data:
+  planner_db_data:
+  analytics_db_data:
