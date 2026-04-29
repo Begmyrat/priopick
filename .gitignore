@@ -1,0 +1,8 @@
+# Virtual environments — never commit these
+**/venv/
+**/__pycache__/
+**/*.pyc
+**/.env
+
+# Docker
+.dockerignore

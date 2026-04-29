@@ -18,7 +18,7 @@ services:
       - planner-service
       - analytics-service
     networks:
-      - weddingwise_network
+      - priopick_network
 
   # ─────────────────────────────
   # AUTH SERVICE
@@ -32,7 +32,7 @@ services:
       auth-db:
         condition: service_healthy
     networks:
-      - weddingwise_network
+      - priopick_network
     volumes:
       - ./auth-service:/app
 
@@ -48,7 +48,7 @@ services:
       vendor-db:
         condition: service_healthy
     networks:
-      - weddingwise_network
+      - priopick_network
     volumes:
       - ./vendor-service:/app
 
@@ -66,7 +66,7 @@ services:
       rabbitmq:
         condition: service_healthy
     networks:
-      - weddingwise_network
+      - priopick_network
     volumes:
       - ./planner-service:/app
     extra_hosts:
@@ -88,7 +88,7 @@ services:
       rabbitmq:
         condition: service_healthy
     networks:
-      - weddingwise_network
+      - priopick_network
     volumes:
       - ./analytics-service:/app
 
@@ -105,7 +105,7 @@ services:
     volumes:
       - auth_db_data:/var/lib/postgresql/data
     networks:
-      - weddingwise_network
+      - priopick_network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U auth_user -d auth_db"]
       interval: 5s
@@ -122,7 +122,7 @@ services:
     volumes:
       - vendor_db_data:/var/lib/postgresql/data
     networks:
-      - weddingwise_network
+      - priopick_network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U vendor_user -d vendor_db"]
       interval: 5s
@@ -139,7 +139,7 @@ services:
     volumes:
       - planner_db_data:/var/lib/postgresql/data
     networks:
-      - weddingwise_network
+      - priopick_network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U planner_user -d planner_db"]
       interval: 5s
@@ -156,7 +156,7 @@ services:
     volumes:
       - analytics_db_data:/var/lib/postgresql/data
     networks:
-      - weddingwise_network
+      - priopick_network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U analytics_user -d analytics_db"]
       interval: 5s
@@ -170,7 +170,7 @@ services:
     image: redis:7-alpine
     container_name: redis_cache
     networks:
-      - weddingwise_network
+      - priopick_network
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -192,7 +192,7 @@ services:
     ports:
       - "15672:15672"
     networks:
-      - weddingwise_network
+      - priopick_network
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "ping"]
       interval: 10s
@@ -200,7 +200,7 @@ services:
       retries: 5
 
 networks:
-  weddingwise_network:
+  priopick_network:
     driver: bridge
 
 volumes:
