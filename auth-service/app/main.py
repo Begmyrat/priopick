@@ -8,16 +8,6 @@ from app.core.database import Base, engine
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """
-    lifespan runs code at startup and shutdown.
-
-    On startup:
-    - Creates all database tables automatically
-    - In production we would use Alembic migrations instead
-
-    On shutdown:
-    - Closes all database connections cleanly
-    """
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     yield
